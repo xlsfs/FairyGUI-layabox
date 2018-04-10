@@ -3,6 +3,8 @@ package fairygui {
 	import fairygui.display.MovieClip;
 	import fairygui.utils.ToolSet;
 	
+	import game.base.res.RSM;
+	
 	import laya.display.Node;
 	import laya.display.Sprite;
 	import laya.maths.Rectangle;
@@ -51,6 +53,11 @@ package fairygui {
 		}
 		
 		override public function dispose(): void {
+			if(resCompleteHandler)
+			{
+				resCompleteHandler.recover();
+				resCompleteHandler = null;
+			}
 			if(this._contentItem == null && (this._content is Image)) {
 				var texture: Texture = Image(this._content).tex;
 				if(texture != null)
@@ -68,6 +75,10 @@ package fairygui {
 			if (this._url == value)
 				return;
 			
+			if(this._url)
+			{
+				RSM.cancelLoader(this._url);
+			}
 			this._url = value;
 			this.loadContent();
 			updateGear(7);
@@ -243,9 +254,13 @@ package fairygui {
 			else
 				this.setErrorState();
 		}
-		
+		private var resCompleteHandler:Handler;
 		protected function loadExternal(): void {
-			AssetProxy.inst.load(this._url, Handler.create(this, this.__getResCompleted));
+			if(resCompleteHandler != null)
+			{
+				resCompleteHandler.recover();
+			}
+			AssetProxy.inst.load(this._url, resCompleteHandler = Handler.create(this, this.__getResCompleted));
 		}
 		
 		protected function freeExternal(texture: Texture): void {
@@ -271,6 +286,7 @@ package fairygui {
 		}
 		
 		private function __getResCompleted(tex:Texture): void {
+			resCompleteHandler = null;
 			if(tex!=null)
 				this.onExternalLoadSuccess(tex);
 			else
@@ -294,6 +310,13 @@ package fairygui {
 		}
 		
 		private function clearErrorState(): void {
+			if(resCompleteHandler != null)
+			{
+				RSM.cancelLoader(this._url);
+				
+				resCompleteHandler.recover();
+				resCompleteHandler = null;
+			}
 			if (this._errorSign != null) {
 				this._displayObject.removeChild(this._errorSign.displayObject);
 				GLoader._errorSignPool.returnObject(this._errorSign);

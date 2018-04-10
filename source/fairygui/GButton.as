@@ -1,5 +1,7 @@
-package fairygui {
-	import fairygui.utils.ToolSet;
+﻿package fairygui {
+	
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
 	
 	import laya.events.Event;
 	import laya.utils.Utils;
@@ -34,7 +36,7 @@ package fairygui {
 		public static const SELECTED_OVER: String = "selectedOver";
 		public static const DISABLED: String = "disabled";
 		public static const SELECTED_DISABLED: String = "selectedDisabled";
-		
+		private var _enabledCtl: Boolean = true;
 		public function GButton() {
 			super();
 			
@@ -256,7 +258,7 @@ package fairygui {
 		}
 		
 		protected function setState(val: String): void {
-			if (this._buttonController)
+			if (enabledCtl&&this._buttonController)
 				this._buttonController.selectedPage = val;
 			
 			if(this._downEffect == 1) {
@@ -326,28 +328,30 @@ package fairygui {
 		
 		override protected function constructFromXML(xml: Object): void {
 			super.constructFromXML(xml);
-			
-			xml = ToolSet.findChildNode(xml, "Button");
-			
-			var str: String;
-			str = xml.getAttribute("mode");
-			if (str)
-				this._mode = ButtonMode.parse(str);
-			
-			str= xml.getAttribute("sound");
-			if(str)
-				this._sound = str;
-			str = xml.getAttribute("volume");
-			if(str)
-				this._soundVolumeScale = parseInt(str) / 100;
-			str = xml.getAttribute("downEffect");
-			if(str)
+			xml = PackUtils.findChildNode(xml,"Button");
+			if(xml&&xml!="")
 			{
-				this._downEffect = str=="dark"?1:(str=="scale"?2:0);
-				str = xml.getAttribute("downEffectValue");
-				this._downEffectValue = parseFloat(str);
-				if(this._downEffect==2)
-					this.setPivot(0.5, 0.5);
+				xml = new PackData(xml);
+				var str: String;
+				str = xml.getAttribute("mode");
+				if (str)
+					this._mode = ButtonMode.parse(str);
+				
+				str= xml.getAttribute("sound");
+				if(str)
+					this._sound = str;
+				str = xml.getAttribute("volume");
+				if(str)
+					this._soundVolumeScale = parseInt(str) / 100;
+				str = xml.getAttribute("downEffect");
+				if(str)
+				{
+					this._downEffect = str=="dark"?1:(str=="scale"?2:0);
+					str = xml.getAttribute("downEffectValue");
+					this._downEffectValue = parseFloat(str);
+					if(this._downEffect==2)
+						this.setPivot(0.5, 0.5);
+				}
 			}
 			
 			this._buttonController = this.getController("button");
@@ -369,9 +373,10 @@ package fairygui {
 		
 		override public function setup_afterAdd(xml: Object): void {
 			super.setup_afterAdd(xml);
-			
-			xml = ToolSet.findChildNode(xml, "Button");
-			if (xml) {
+			xml = PackUtils.findChildNode(xml,"Button");
+			if (xml&&xml!="") 
+			{
+				xml = new PackData(xml);
 				var str: String;
 				str = xml.getAttribute("title");
 				if (str)
@@ -461,6 +466,9 @@ package fairygui {
 		}
 		
 		private function  __mouseup(): void {
+			if(this.displayObject.destroyed)
+				return;
+				
 			if (this._down) {
 				Laya.stage.off(Event.MOUSE_UP, this, this.__mouseup);
 				this._down = false;
@@ -503,6 +511,19 @@ package fairygui {
 				if(_relatedController)
 					_relatedController.selectedPageId = _pageOption.id;
 			}
+		}
+		/**
+		 * 设置按钮控制器是否可用 
+		 * @param $ctl
+		 * 
+		 */		
+		public function set enabledCtl($ctl:Boolean):void
+		{
+			_enabledCtl = $ctl;
+		}
+		public function get enabledCtl():Boolean
+		{
+			return _enabledCtl;
 		}
 	}
 }

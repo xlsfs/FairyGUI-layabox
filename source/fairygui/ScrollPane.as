@@ -1121,6 +1121,8 @@ package fairygui {
 		}
 		
 		private function __mouseDown(): void {
+			if(this.owner.displayObject.destroyed) return;
+			
 			if(!_touchEffect)
 				return;
 			
@@ -1472,6 +1474,8 @@ package fairygui {
 		}
 		
 		private function __mouseWheel(evt:Event):void {
+			if(this.owner.displayObject.destroyed) return;
+			
 			if(!this._mouseWheelEnabled)
 				return;
 			

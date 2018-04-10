@@ -1,5 +1,6 @@
-package fairygui {
-	import fairygui.utils.ToolSet;
+﻿package fairygui {
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
 	
 	import laya.events.Event;
 	import laya.maths.Point;
@@ -60,8 +61,9 @@ package fairygui {
 		override protected function constructFromXML(xml: Object): void {
 			super.constructFromXML(xml);
 			
-			xml = ToolSet.findChildNode(xml, "ScrollBar");
+			xml = PackUtils.findChildNode(xml, "ScrollBar");
 			if (xml) {
+				xml = new PackData(xml);
 				this._fixedGripSize = xml.getAttribute("fixedGripSize") == "true";
 			}
 			
@@ -106,6 +108,8 @@ package fairygui {
 		
 		private static var sScrollbarHelperPoint: Point = new Point();
 		private function __gripMouseMove(): void {
+			if(this.displayObject.destroyed) return;
+			
 			var pt: Point = this.globalToLocal(Laya.stage.mouseX,Laya.stage.mouseY,GScrollBar.sScrollbarHelperPoint);
 			if (this._vertical) {
 				var curY: Number = pt.y- this._dragOffset.y;

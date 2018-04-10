@@ -415,6 +415,8 @@ package fairygui {
 		}
 		
 		private function __stageMouseDown(evt:Event): void {
+			if(this.displayObject.destroyed) return;
+			
 			var mc: laya.display.Node = evt.target;
 			while (mc != this.displayObject.stage && mc != null) {
 				if (mc["$owner"]) {

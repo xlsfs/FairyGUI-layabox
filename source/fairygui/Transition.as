@@ -1,6 +1,9 @@
-package fairygui {
+﻿package fairygui {
 	import fairygui.utils.ColorMatrix;
 	import fairygui.utils.ToolSet;
+	
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
 	
 	import laya.filters.ColorFilter;
 	import laya.utils.Handler;
@@ -144,6 +147,7 @@ package fairygui {
 				return;
 			
 			if(item.tweener != null) {
+				cleanTween(item);
 				item.tweener.clear();
 				item.tweener = null;
 			}
@@ -188,6 +192,7 @@ package fairygui {
 				
 				if (item.tweener != null)
 				{
+					cleanTween(item);
 					item.tweener.clear();
 					item.tweener = null;
 				}
@@ -382,6 +387,7 @@ package fairygui {
 					{
 						_totalTasks++;
 						item.completed = false;
+						cleanTween(item);
 						item.tweener = Tween.to(item.value, {}, startTime*1000, null, Handler.create(this, this.__delayCall,[item]));
 						item.tweener.update = null;
 					}
@@ -398,6 +404,7 @@ package fairygui {
 					else {
 						item.completed = false;
 						this._totalTasks++;
+						cleanTween(item);
 						item.tweener = Tween.to(item.value, {}, startTime*1000, null, Handler.create(this, this.__delayCall2,[item]));
 						item.tweener.update = null;
 					}
@@ -511,6 +518,7 @@ package fairygui {
 			_totalTasks++;
 			item.completed = false;
 			
+			cleanTween(item);
 			item.tweener = Tween.to(item.value, 
 				toProps,
 				item.duration*1000, 
@@ -523,6 +531,7 @@ package fairygui {
 		}
 		
 		private function __delayCall(item: TransitionItem):void {
+			cleanTween(item);
 			item.tweener = null;
 			_totalTasks--;
 			
@@ -530,6 +539,7 @@ package fairygui {
 		}
 		
 		private function __delayCall2(item: TransitionItem):void {
+			cleanTween(item);
 			item.tweener = null;
 			this._totalTasks--;
 			item.completed = true;
@@ -545,6 +555,7 @@ package fairygui {
 		}
 		
 		private function __tweenComplete(item: TransitionItem):void {
+			cleanTween(item);
 			item.tweener = null;
 			this._totalTasks--;
 			item.completed = true;
@@ -569,6 +580,7 @@ package fairygui {
 				else
 					reversed = this._reversed;
 				this.prepareValue(item,toProps,reversed);
+				cleanTween(item);
 				item.tweener = Tween.to(item.value,
 					toProps, 
 					item.duration * 1000,
@@ -780,93 +792,105 @@ package fairygui {
 					this.autoPlayDelay = parseFloat(str);
 			}
 			
-			var col: Array = xml.childNodes;
-			var length1: Number = col.length;
-			for(var i1: Number = 0;i1 < length1;i1++) {
-				var cxml: Object = col[i1];
-				if(cxml.nodeName!="item")
-					continue;
-				
-				var item: TransitionItem = new TransitionItem();
-				this._items.push(item);
-				item.time = parseInt(cxml.getAttribute("time")) / this.FRAME_RATE;
-				item.targetId = cxml.getAttribute("target");
-				str = cxml.getAttribute("type");
-				switch(str) {
-					case "XY":
-						item.type = TransitionActionType.XY;
-						break;
-					case "Size":
-						item.type = TransitionActionType.Size;
-						break;
-					case "Scale":
-						item.type = TransitionActionType.Scale;
-						break;
-					case "Pivot":
-						item.type = TransitionActionType.Pivot;
-						break;
-					case "Alpha":
-						item.type = TransitionActionType.Alpha;
-						break;
-					case "Rotation":
-						item.type = TransitionActionType.Rotation;
-						break;
-					case "Color":
-						item.type = TransitionActionType.Color;
-						break;
-					case "Animation":
-						item.type = TransitionActionType.Animation;
-						break;
-					case "Visible":
-						item.type = TransitionActionType.Visible;
-						break;
-					case "Sound":
-						item.type = TransitionActionType.Sound;
-						break;
-					case "Transition":
-						item.type = TransitionActionType.Transition;
-						break;
-					case "Shake":
-						item.type = TransitionActionType.Shake;
-						break;
-					case "ColorFilter":
-						item.type = TransitionActionType.ColorFilter;
-						break;
-					case "Skew":
-						item.type = TransitionActionType.Skew;
-						break;
-					default:
-						item.type = TransitionActionType.Unknown;
-						break;
-				}
-				item.tween = cxml.getAttribute("tween") == "true";
-				item.label = cxml.getAttribute("label");
-				if(item.tween) {
-					item.duration = parseInt(cxml.getAttribute("duration")) / this.FRAME_RATE;
-					if(item.time + item.duration > this._maxTime)
-						this._maxTime = item.time + item.duration;
-					str = cxml.getAttribute("ease");
-					if(str)
-						item.easeType = ToolSet.parseEaseType(str);
-					str = cxml.getAttribute("repeat");
-					if(str)
-						item.repeat = parseInt(str);
-					item.yoyo = cxml.getAttribute("yoyo") == "true";
-					item.label2 = cxml.getAttribute("label2");
-					var v: String = cxml.getAttribute("endValue");
-					if(v) {
-						this.decodeValue(item.type,cxml.getAttribute("startValue"),item.startValue);
-						this.decodeValue(item.type,v,item.endValue);
+			var cInfo: Object;
+			var proType:String;
+			var packData:PackData;
+			var controller: Controller;
+			var item: TransitionItem;
+			var v: String;
+			for(var cType:String in xml.jsonInfo)
+			{
+				if(cType == "item")
+				{
+					cInfo = xml.jsonInfo[cType];
+					proType = PackUtils.getTypeof(cInfo);
+					if(proType != "array") cInfo = [cInfo];
+					for each(var cObj:Object in cInfo)
+					{
+						packData = new PackData(cObj);
+						item= new TransitionItem();
+						this._items.push(item);
+						item.time = parseInt(packData.getAttribute("time")) / this.FRAME_RATE;
+						item.targetId = packData.getAttribute("target");
+						str = packData.getAttribute("type");
+						switch(str) {
+							case "XY":
+								item.type = TransitionActionType.XY;
+								break;
+							case "Size":
+								item.type = TransitionActionType.Size;
+								break;
+							case "Scale":
+								item.type = TransitionActionType.Scale;
+								break;
+							case "Pivot":
+								item.type = TransitionActionType.Pivot;
+								break;
+							case "Alpha":
+								item.type = TransitionActionType.Alpha;
+								break;
+							case "Rotation":
+								item.type = TransitionActionType.Rotation;
+								break;
+							case "Color":
+								item.type = TransitionActionType.Color;
+								break;
+							case "Animation":
+								item.type = TransitionActionType.Animation;
+								break;
+							case "Visible":
+								item.type = TransitionActionType.Visible;
+								break;
+							case "Sound":
+								item.type = TransitionActionType.Sound;
+								break;
+							case "Transition":
+								item.type = TransitionActionType.Transition;
+								break;
+							case "Shake":
+								item.type = TransitionActionType.Shake;
+								break;
+							case "ColorFilter":
+								item.type = TransitionActionType.ColorFilter;
+								break;
+							case "Skew":
+								item.type = TransitionActionType.Skew;
+								break;
+							default:
+								item.type = TransitionActionType.Unknown;
+								break;
+						}
+						item.tween = packData.getAttribute("tween") == "true";
+						item.label = packData.getAttribute("label");
+						if(item.tween)
+						{
+							item.duration = parseInt(packData.getAttribute("duration")) / this.FRAME_RATE;
+							if(item.time + item.duration > this._maxTime)
+								this._maxTime = item.time + item.duration;
+							str = packData.getAttribute("ease");
+							if(str)
+								item.easeType = ToolSet.parseEaseType(str);
+							str = packData.getAttribute("repeat");
+							if(str)
+								item.repeat = parseInt(str);
+							item.yoyo = packData.getAttribute("yoyo") == "true";
+							item.label2 = packData.getAttribute("label2");
+							v = packData.getAttribute("endValue");
+							if(v) {
+								this.decodeValue(item.type,packData.getAttribute("startValue"),item.startValue);
+								this.decodeValue(item.type,v,item.endValue);
+							}
+							else {
+								item.tween = false;
+								this.decodeValue(item.type,packData.getAttribute("startValue"),item.value);
+							}
+						}
+						else {
+							if(item.time > this._maxTime)
+								this._maxTime = item.time;
+							this.decodeValue(item.type,packData.getAttribute("value"),item.value);
+						}
 					}
-					else {
-						item.tween = false;
-						this.decodeValue(item.type,cxml.getAttribute("startValue"),item.value);
-					}
-				}
-				else {
-					if(item.time > this._maxTime)
-						this._maxTime = item.time;
-					this.decodeValue(item.type,cxml.getAttribute("value"),item.value);
 				}
 			}
 		}
@@ -959,6 +983,22 @@ package fairygui {
 			}
 		}
 		
+		public function cleanTween(item:TransitionItem):void
+		{
+			if(item.tweener != null)
+			{
+				if(item.tweener.update)
+				{
+					item.tweener.update.recover();
+					item.tweener.update = null;
+				}
+				if(item.tweener._complete)
+				{
+					item.tweener._complete.recover();
+					item.tweener._complete = null;
+				}
+			}
+		}
 	}
 }           
 import fairygui.GObject;

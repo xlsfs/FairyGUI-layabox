@@ -1,4 +1,7 @@
 package fairygui {
+	import fairyguiExternal.custom.utils.PackUtils;
+	import fairyguiExternal.custom.packinfo.PackData;
+	
 	import laya.display.Sprite;
 	import laya.events.Event;
 	import laya.maths.Point;
@@ -2569,34 +2572,44 @@ package fairygui {
 				}
 			}
 			
-			var col: Array = xml.childNodes;
-			var length: int = col.length;
-			for (var i: int = 0; i < length; i++) {
-				var cxml: Object = col[i];
-				if(cxml.nodeName != "item")
-					continue;
-				
-				var url: String = cxml.getAttribute("url");
-				if (!url)
-					url = this._defaultItem;
-				if (!url)
-					continue;
-				
-				var obj: GObject = this.getFromPool(url);
-				if(obj != null) {
-					this.addChild(obj);
-					str = cxml.getAttribute("title");
-					if(str)
-						obj.text = str;
-					str = cxml.getAttribute("icon");
-					if(str)
-						obj.icon = str;
-					str = cxml.getAttribute("name");
-					if(str)
-						obj.name = str;
-					str = cxml.getAttribute("selectedIcon");
-					if(str && (obj is GButton))
-						GButton(obj).selectedIcon = str;
+			var cInfo: Object;
+			var proType:String;
+			var packData:PackData;
+			var controller: Controller;
+			var url: String;
+			var obj: GObject;
+			for(var cType:String in xml.jsonInfo)
+			{
+				if(cType == "item") 
+				{
+					cInfo = xml.jsonInfo[cType];
+					if(cInfo==""||!cInfo)
+						continue;
+					proType = PackUtils.getTypeof(cInfo);
+					if(proType != "array") cInfo = [cInfo];
+					for each(var cObj:Object in cInfo)
+					{
+						packData = new PackData(cObj);
+						url= packData.getAttribute("url");
+						if (!url)
+							url = this._defaultItem;
+						if (!url)
+							continue;
+						obj = this.getFromPool(url);
+						if(obj != null) 
+						{
+							this.addChild(obj);
+							str = packData.getAttribute("title");
+							if(str)
+								obj.text = str;
+							str = packData.getAttribute("icon");
+							if(str)
+								obj.icon = str;
+							str = packData.getAttribute("name");
+							if(str)
+								obj.name = str;
+						}
+					}
 				}
 			}
 		}

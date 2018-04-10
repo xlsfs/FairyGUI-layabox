@@ -1,5 +1,6 @@
-package fairygui {
-	import fairygui.utils.ToolSet;
+﻿package fairygui {
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
 	
 	import laya.display.Input;
 	
@@ -118,37 +119,38 @@ package fairygui {
 		override public function setup_afterAdd(xml: Object): void {
 			super.setup_afterAdd(xml);
 			
-			xml = ToolSet.findChildNode(xml, "Label");
-			if (xml) {
+			var child:Object = PackUtils.findChildNode(xml, "Label");
+			if (child) {
+				var info:PackData = new PackData(child);
 				var str: String;
-				str = xml.getAttribute("title");
+				str = info.getAttribute("title");
 				if(str)
 					this.text = str;
-				str = xml.getAttribute("icon");
+				str = info.getAttribute("icon");
 				if(str)
 					this.icon = str;                
-				str = xml.getAttribute("titleColor");
+				str = info.getAttribute("titleColor");
 				if (str)
 					this.titleColor = str;
-				str = xml.getAttribute("titleFontSize");
+				str = info.getAttribute("titleFontSize");
 				if(str)
 					this.titleFontSize = parseInt(str);
 				
 				if(this._titleObject is GTextInput)
 				{
-					str = xml.getAttribute("prompt");
+					str = info.getAttribute("prompt");
 					if(str)
 						GTextInput(this._titleObject).promptText = str;
-					str = xml.getAttribute("maxLength");
+					str = info.getAttribute("maxLength");
 					if(str)
 						GTextInput(_titleObject).maxLength = parseInt(str);
-					str = xml.getAttribute("restrict");
+					str = info.getAttribute("restrict");
 					if(str)
 						GTextInput(_titleObject).restrict = str;
-					str = xml.getAttribute("password");
+					str = info.getAttribute("password");
 					if(str)
 						GTextInput(_titleObject).password = str=="true";
-					str = xml.getAttribute("keyboardType");
+					str = info.getAttribute("keyboardType");
 					if(str=="4")
 						GTextInput(_titleObject).keyboardType = Input.TYPE_NUMBER;
 					else if(str=="3")

@@ -1,6 +1,9 @@
 package fairygui {
 	import fairygui.utils.ColorMatrix;
 	
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
+	
 	import laya.display.Sprite;
 	import laya.events.Event;
 	import laya.filters.ColorFilter;
@@ -1103,7 +1106,39 @@ package fairygui {
 			
 			str = xml.getAttribute("customData");
 			if (str)
+			{
 				this.data = str;
+				
+				{//自定义数据内放脚本,脚本用换行和等于区分
+					var arr2:Array = str.split("\r\n").join("|||").split("\r").join("|||").split("\n").join("|||").split("|||");
+					for(var i:int = 0; i < arr2.length; i++)
+					{
+						var item:String = arr2[i];
+						if(item)
+						{
+							var itemArr:Array = item.split("=");
+							if(itemArr.length == 2)
+							{
+								var objArr:Array = itemArr[0].split(".");
+								var lastName:String = objArr.pop();
+								var itemObj:Object = this;
+								
+								for(var j:int = 0; j < objArr.length; j++) itemObj = itemObj.getChild(objArr[j]);
+								
+								if (itemArr[1] == "TRUE") 
+									itemObj[lastName] = true;
+								else if (itemArr[1] == "FALSE")
+									itemObj[lastName] = false;
+								else if (itemArr[1].substr(0,1) == '"' && itemArr[1].substr(-1,1) == '"')
+									itemObj[lastName] = itemArr[1].substr(1, itemArr[1].length - 2); 
+								else
+									itemObj[lastName] = parseFloat(itemArr[1]);
+							}
+						}
+					}
+				}
+				
+			}
 		}
 		
 		private static var GearXMLKeys:Object = {
@@ -1122,16 +1157,21 @@ package fairygui {
 			if (str)
 				this._group = this._parent.getChildById(str) as GGroup;
 			
-			var col: Array = xml.childNodes;
-			var length1: Number = col.length;             
-			for (var i1: Number = 0; i1 < length1; i1++) {
-				var cxml:Object = col[i1];
-				if(cxml.nodeType!=1)
-					continue;
-				
-				var index:* = GObject.GearXMLKeys[cxml.nodeName];
-				if(index!=undefined)
-					this.getGear(index).setup(cxml);
+			var cInfo: Object;
+			var proType:String;
+			var controller: Controller;
+			var index:* ;
+			for(var cType:String in xml.jsonInfo)
+			{
+				cInfo = xml.jsonInfo[cType];
+				proType = PackUtils.getTypeof(cInfo);
+				if(proType != "array") cInfo = [cInfo];
+				for each(var cObj:Object in cInfo)
+				{
+					index = GObject.GearXMLKeys[cType];
+					if(index!=undefined)
+						this.getGear(index).setup(new PackData(cObj));
+				}
 			}
 		}
 		
@@ -1196,6 +1236,8 @@ package fairygui {
 		}
 		
 		private function __moving(evt:Event): void {
+			if(this.displayObject.destroyed) return;
+			
 			var sensitivity: Number = fairygui.UIConfig.touchDragSensitivity;
 			if(this._touchDownPoint != null
 				&& Math.abs(this._touchDownPoint.x - Laya.stage.mouseX) < sensitivity
@@ -1211,6 +1253,8 @@ package fairygui {
 		}
 		
 		private function __moving2(evt:Event): void {
+			if(this.displayObject.destroyed) return;
+			
 			var xx: Number = Laya.stage.mouseX - GObject.sGlobalDragStart.x + GObject.sGlobalRect.x;
 			var yy: Number = Laya.stage.mouseY - GObject.sGlobalDragStart.y + GObject.sGlobalRect.y;
 			

@@ -2,6 +2,9 @@ package fairygui {
 	import fairygui.action.ControllerAction;
 	import fairygui.action.PlayTransitionAction;
 	
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
+	
 	import laya.events.EventDispatcher;
 	
 	public class Controller extends EventDispatcher {
@@ -246,19 +249,28 @@ package fairygui {
 					this._pageNames.push(arr[i + 1]);
 				}
 			}
-			
-			var col: Array = xml.childNodes;
-			var length1: Number = col.length;
-			if(length1>0)
+			var cInfo: Object;
+			var proType:String;
+			var packData:PackData;
+			var controller: Controller;
+			var action:ControllerAction;
+			for(var cType:String in xml.jsonInfo)
 			{
 				if(!_actions)
 					_actions = new Vector.<ControllerAction>();
-
-				for(var i1: Number = 0;i1 < length1;i1++) {
-					var cxml: Object = col[i1];
-					var action:ControllerAction = ControllerAction.createAction(cxml.getAttribute("type"));
-					action.setup(cxml);
-					_actions.push(action);
+				if(cType == "action")
+				{
+					cInfo = xml.jsonInfo[cType];
+					proType = PackUtils.getTypeof(cInfo);
+					if(proType != "array") cInfo = [cInfo];
+					
+					for each(var cObj:Object in cInfo)
+					{
+						packData = new PackData(cObj);
+						action = ControllerAction.createAction(packData.getAttribute("type"));
+						action.setup(packData);
+						_actions.push(action);
+					}
 				}
 			}
 			

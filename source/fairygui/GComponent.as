@@ -3,6 +3,9 @@ package fairygui {
 	import fairygui.utils.PixelHitTest;
 	import fairygui.utils.PixelHitTestData;
 	
+	import fairyguiExternal.custom.utils.PackUtils;
+	import fairyguiExternal.custom.packinfo.PackData;
+	
 	import laya.display.Sprite;
 	import laya.events.Event;
 	import laya.maths.Point;
@@ -1088,20 +1091,27 @@ package fairygui {
 			
 			this._buildingDisplayList = true;
 			
-			var col: Array = xml.childNodes;
-			var length1: Number = 0;
-			if(col)
-				length1 = col.length;
+			var cInfo: Object;
+			var proType:String;
+			var packData:PackData;
 			
 			var i:int;
 			var controller: Controller;
-			for(i = 0;i < length1;i++) {
-				var cxml: Object = col[i];
-				if(cxml.nodeName == "controller") {
-					controller = new Controller();
-					this._controllers.push(controller);
-					controller._parent = this;
-					controller.setup(cxml);
+			for(var cType:String in xml.jsonInfo)
+			{
+				if(cType == "controller") 
+				{
+					cInfo = xml.jsonInfo[cType];
+					proType = PackUtils.getTypeof(cInfo);
+					if(proType != "array") cInfo = [cInfo];
+					for each(var cObj:Object in cInfo)
+					{
+						packData = new PackData(cObj);
+						controller = new Controller();
+						this._controllers.push(controller);
+						controller._parent = this;
+						controller.setup(packData);
+					}
 				}
 			}
 			
@@ -1148,12 +1158,21 @@ package fairygui {
 				this.mask = getChildById(str).displayObject;
 			
 			var trans: Transition;
-			for(i = 0;i < length1;i++) {
-				cxml = col[i];
-				if(cxml.nodeName == "transition") {
-					trans = new Transition(this);
-					this._transitions.push(trans);
-					trans.setup(cxml);
+			for(cType in xml.jsonInfo)
+			{
+				if(cType == "transition") 
+				{
+					cInfo = xml.jsonInfo[cType];
+					proType = PackUtils.getTypeof(cInfo);
+					if(proType != "array") cInfo = [cInfo];
+					
+					for each(cObj in cInfo)
+					{
+						packData = new PackData(cObj);
+						trans = new Transition(this);
+						this._transitions.push(trans);
+						trans.setup(packData);
+					}
 				}
 			}
 			

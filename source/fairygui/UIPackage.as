@@ -1,10 +1,18 @@
-
-package fairygui {
+﻿package fairygui {
+	import fairygui.AssetProxy;
+	import fairygui.DisplayListItem;
+	import fairygui.PackageItem;
+	import fairygui.PackageItemType;
 	import fairygui.display.BMGlyph;
 	import fairygui.display.BitmapFont;
 	import fairygui.display.Frame;
 	import fairygui.utils.PixelHitTestData;
 	import fairygui.utils.ToolSet;
+	
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
+	
+	import game.utils.ByteArray;
 	
 	import laya.maths.Rectangle;
 	import laya.resource.Texture;
@@ -159,15 +167,18 @@ package fairygui {
 		
 		public static function setStringsSource(source:String):void	{
 			UIPackage._stringsSource = {};
-			var xml:Object = Utils.parseXMLFromString(source);
-			var resNode:Object = ToolSet.findChildNode(xml, "resources");			
-			var nodes: Array = resNode.childNodes;
-			var length1: Number = nodes.length;			
-			for (var i1: Number = 0; i1 < length1; i1++) {
-				var cxml: Object = nodes[i1];
-				if (cxml.nodeName == "string") {
-					var key:String = cxml.getAttribute("name");
-					var text:String = cxml.textContent;
+			var resources:Object = PackUtils.findChildNode(new PackData(source),"resources");
+			var packData:PackData = new PackData(resources);
+			var cInfo:Object;
+			for(var cType:String in packData.jsonInfo)
+			{
+				if(cType == "string") 
+				{
+					cInfo = packData.jsonInfo[cType];
+					if(cInfo==""||!cInfo)
+						continue;
+					var key:String = cInfo.getAttribute("name");
+					var text:String = cInfo.textContent;
 					var i:int = key.indexOf("-");
 					if(i==-1)
 						continue;
@@ -245,72 +256,73 @@ package fairygui {
 			}
 			
 			str = this.getDesc("package.xml");
-			var xml:Object = Utils.parseXMLFromString(str);
-			
-			var rootNode:Object = xml.firstChild;
-			this._id = rootNode.getAttribute("id");
-			this._name = rootNode.getAttribute("name");
-			
-			var resources: Array =  ToolSet.findChildNode(rootNode, "resources").childNodes;
-			
+			var rootNode:Object = str;
+			this._id = rootNode.id;
+			this._name = rootNode.name;
+			var resources: Array =rootNode.resources;
 			this._itemsById = {};
 			this._itemsByName = {};
 			var pi: PackageItem;
 			var cxml: Object;
 			
-			var length1: Number = resources.length;
-			for(var i1: Number = 0;i1 < length1;i1++) {
-				cxml = resources[i1];
-				if(cxml.nodeType!=1)
-					continue;
-				
-				pi = new PackageItem();
-				pi.owner = this;
-				pi.type = PackageItemType.parse(cxml.nodeName);
-				pi.id = cxml.getAttribute("id");
-				pi.name = cxml.getAttribute("name");
-				pi.file = cxml.getAttribute("file");
-				str = cxml.getAttribute("size");
-				if(str) {
-					arr = str.split(UIPackage.sep0);
-					pi.width = parseInt(arr[0]);
-					pi.height = parseInt(arr[1]);
-				}
-				switch(pi.type) {
-					case PackageItemType.Image: {
-						str = cxml.getAttribute("scale");
-						if(str == "9grid") {
-							pi.scale9Grid = new laya.maths.Rectangle();
-							str = cxml.getAttribute("scale9grid");
-							if(str) {
-								arr = str.split(UIPackage.sep0);
-								pi.scale9Grid.x = parseInt(arr[0]);
-								pi.scale9Grid.y = parseInt(arr[1]);
-								pi.scale9Grid.width = parseInt(arr[2]);
-								pi.scale9Grid.height = parseInt(arr[3]);
-								
-								str = cxml.getAttribute("gridTile");
-								if(str)
-									pi.tileGridIndice = parseInt(str);
-							}
-						}
-						else if(str == "tile") {
-							pi.scaleByTile = true;
-						}
-						str = cxml.getAttribute("smoothing");
-						pi.smoothing = str != "false";
-						break;
+			for(var cType:String in resources)
+			{
+				var cInfo:Object = resources[cType];
+				var proType:String = PackUtils.getTypeof(cInfo);
+				if(proType != "array") cInfo = [cInfo];
+				for each(cxml in cInfo)
+				{
+					pi = new PackageItem();
+					pi.owner = this;
+					pi.type = PackageItemType.parse(cType);
+					pi.id = cxml.id;
+					pi.name = cxml.name;
+					pi.file = cxml.file;
+					str = cxml.size;
+					if(str) 
+					{
+						arr = str.split(UIPackage.sep0);
+						pi.width = parseInt(arr[0]);
+						pi.height = parseInt(arr[1]);
 					}
-						
-					case PackageItemType.Component:
-						UIObjectFactory.resolvePackageItemExtension(pi);
-						break;
+					switch(pi.type)
+					{
+						case PackageItemType.Image:
+						{
+							str = cxml.scale;
+							if(str == "9grid") 
+							{
+								pi.scale9Grid = new laya.maths.Rectangle();
+								str = cxml.scale9grid;
+								if(str)
+								{
+									arr = str.split(UIPackage.sep0);
+									pi.scale9Grid.x = parseInt(arr[0]);
+									pi.scale9Grid.y = parseInt(arr[1]);
+									pi.scale9Grid.width = parseInt(arr[2]);
+									pi.scale9Grid.height = parseInt(arr[3]);
+									
+									str = cxml.gridTile;
+									if(str)
+										pi.tileGridIndice = parseInt(str);
+								}
+							}
+							else if(str == "tile") {
+								pi.scaleByTile = true;
+							}
+							str = cxml.smoothing;
+							pi.smoothing = str != "false";
+							break;
+						}
+						case PackageItemType.Component:
+							UIObjectFactory.resolvePackageItemExtension(pi);
+							break;
+					}
+					this._items.push(pi);
+					this._itemsById[pi.id] = pi;
+					if(pi.name != null)
+						this._itemsByName[pi.name] = pi;
 				}
-				
-				this._items.push(pi);
-				this._itemsById[pi.id] = pi;
-				if(pi.name != null)
-					this._itemsByName[pi.name] = pi;
 			}
 			
 			cnt = this._items.length;
@@ -336,24 +348,36 @@ package fairygui {
 			{
 				var data: Uint8Array;
 				__JS__("var inflater = new Zlib.RawInflate(buf);data = inflater.decompress();");
-				var source: String = new Byte(data).readUTFBytes();
-				var curr: Number = 0;            
-				var fn: String;
-				var size: Number;
-				while(true)
+				var info:ByteArray = new ByteArray();
+				info.writeArrayBuffer(data);
+				info.position = 0;
+				var num:int = info.readInt();
+				var fileNameLen:int;
+				var fileName:String;
+				var fileInfo:Object;
+				var fileType:int;
+				while(num>0)
 				{
-					var pos:Number = source.indexOf("|", curr);
-					if(pos == -1)
-						break;
-					fn = source.substring(curr,pos);
-					curr = pos + 1;
-					pos = source.indexOf("|",curr);
-					size = parseInt(source.substring(curr,pos));
-					curr = pos + 1;
-					this._resData[fn] = source.substr(curr,size);
-					curr += size;
+					fileNameLen = info.readByte();
+					fileName = info.readUTFBytes(fileNameLen);
+					fileType = info.readByte();
+					if(fileType == 1)
+					{
+						fileInfo =  info.readObject();
+					}else
+					{
+						var byteLen:int = info.readInt();
+						var bytes:ByteArray = new ByteArray();
+						info.readBytes(bytes,0,byteLen);
+						fileInfo = String(bytes);
+					}
+					this._resData[fileName] = fileInfo;
+					num--;
 				}
 			}
+			var spLen:int = info.readInt();
+			var sp:String =  info.readUTFBytes(spLen);
+			this._resData["sprites.bytes"] =sp;
 		}
 		
 		private function decodeUncompressed(buf: ArrayBuffer):void {
@@ -522,10 +546,10 @@ package fairygui {
 					if (!item.decoded) {
 						item.decoded = true;
 						var str: String = this.getDesc(item.id + ".xml");
-						var xml: Object = Utils.parseXMLFromString(str);
-						item.componentData = xml.firstChild;
+						item.componentData = new PackData(str);
 						
 						loadComponentChildren(item);
+						item.displayList.sort(sortDisList);
 						translateComponent(item);
 					}
 					return item.componentData;
@@ -533,6 +557,21 @@ package fairygui {
 				default:
 					return AssetProxy.inst.getRes(this._resKey + "@" + item.id);
 			}
+		}
+		
+		private function sortDisList($value1:DisplayListItem,$value2:DisplayListItem):int
+		{
+			var fir:int = $value1.desc.getAttribute("sortNum");
+			var sec:int = $value2.desc.getAttribute("sortNum");
+			if(fir > sec)
+			{
+				return 1;
+			}
+			if(fir  < sec)
+			{
+				return -1;
+			}
+			return 0;
 		}
 		
 		private function getDesc(fn:String):String {
@@ -546,44 +585,55 @@ package fairygui {
 		
 		private function loadComponentChildren(item:PackageItem):void
 		{
-			var listNode:Object = ToolSet.findChildNode(item.componentData, "displayList");
+			var listNode:Object =item.componentData.jsonInfo.displayList;
 			if (listNode != null)
 			{
-				var col:Object = listNode.childNodes;
-				var dcnt:int = col.length;
-				item.displayList = new Vector.<DisplayListItem>(dcnt);
+				var cInfo:Object;
+				var packData:PackData;
+				var proType:String;
+				item.displayList = new Vector.<DisplayListItem>();
 				var di:DisplayListItem;
-				for (var i:int = 0; i < dcnt; i++)
+				var i:int=0;
+				var tagName:String;
+				var src:String;
+				var pkg:UIPackage;
+				var pkgId:String;
+				var pi:PackageItem;
+				for(var dType:String in listNode)
 				{
-					var cxml:Object = col[i];
-					var tagName:String = cxml.nodeName;
-					
-					var src:String = cxml.getAttribute("src");
-					if (src)
+					cInfo = listNode[dType];
+					proType = PackUtils.getTypeof(cInfo);
+					if(proType != "array") cInfo = [cInfo];
+					for each(var cObj:Object in cInfo)
 					{
-						var pkgId:String = cxml.getAttribute("pkg");
-						var pkg:UIPackage;
-						if (pkgId && pkgId != item.owner.id)
-							pkg = UIPackage.getById(pkgId);
+						packData = new PackData(cObj);
+						tagName = dType;
+						src = packData.getAttribute("src");
+						if (src)
+						{
+							pkgId = packData.getAttribute("pkg");
+							if (pkgId && pkgId != item.owner.id)
+								pkg = UIPackage.getById(pkgId);
+							else
+								pkg = item.owner;
+							
+							pi = pkg != null ? pkg.getItemById(src) : null;
+							if (pi != null)
+								di = new DisplayListItem(pi, null);
+							else
+								di = new DisplayListItem(null, tagName);
+						}
 						else
-							pkg = item.owner;
-						
-						var pi:PackageItem = pkg != null ? pkg.getItemById(src) : null;
-						if (pi != null)
-							di = new DisplayListItem(pi, null);
-						else
-							di = new DisplayListItem(null, tagName);
+						{
+							if (tagName == "text" && packData.getAttribute("input")=="true")
+								di = new DisplayListItem(null, "inputtext");
+							else
+								di = new DisplayListItem(null, tagName);
+						}
+						di.desc = packData;
+						item.displayList[i] = di;
+						i++;
 					}
-					else
-					{
-						if (tagName == "text" && cxml.getAttribute("input")=="true")
-							di = new DisplayListItem(null, "inputtext");
-						else
-							di = new DisplayListItem(null, tagName);
-					}
-					
-					di.desc = cxml;
-					item.displayList[i] = di;
 				}
 			}
 			else
@@ -608,6 +658,8 @@ package fairygui {
 			var i1:Number, i2:Number, j:Number;
 			var str:String;
 			
+			var cInfo:Object;
+			var cType:String
 			for (i1 = 0; i1 < length1; i1++) {
 				cxml = item.displayList[i1].desc;
 				ename = cxml.nodeName;
@@ -620,8 +672,9 @@ package fairygui {
 						cxml.setAttribute("tooltips", value);
 				}
 				
-				dxml = ToolSet.findChildNode(cxml, "gearText");
+				dxml = PackUtils.findChildNode(cxml, "gearText");
 				if(dxml) {
+					dxml =  new PackData(dxml);
 					value = strings[elementId+"-texts"];
 					if(value!=undefined)
 						dxml.setAttribute("values", value);
@@ -640,22 +693,21 @@ package fairygui {
 						cxml.setAttribute("prompt", value);
 				}
 				else if(ename=="list")	{
-					items = cxml.childNodes;
-					length2 = items.length;
-					j = 0;
-					for (i2 = 0; i2 < length2; i2++) {
-						exml = items[i2];
-						if(exml.nodeName!="item")
-							continue;
-						value = strings[elementId+"-"+j];
-						if(value!=undefined)
-							exml.setAttribute("title", value);
-						j++;
+					for(cType in cxml.jsonInfo) {
+						if(cType == "item") {
+							cInfo = cxml.jsonInfo[cType];
+							if(cInfo==""||!cInfo)
+								continue;
+							value = strings[elementId+"-"+j];
+							if(value!=undefined)
+								cInfo.setAttribute("title", value);
+						}
 					}
 				}
 				else if(ename=="component")	{
-					dxml = ToolSet.findChildNode(cxml, "Button");
+					dxml = PackUtils.findChildNode(cxml, "Button");
 					if(dxml) {
+						dxml = new PackData(dxml);
 						value = strings[elementId];
 						if(value!=undefined)
 							dxml.setAttribute("title", value);
@@ -665,8 +717,9 @@ package fairygui {
 						continue;
 					}
 					
-					dxml = ToolSet.findChildNode(cxml, "Label");
+					dxml = PackUtils.findChildNode(cxml, "Label");
 					if(dxml) {
+						dxml = new PackData(dxml);
 						value = strings[elementId];
 						if(value!=undefined)
 							dxml.setAttribute("title", value);
@@ -676,23 +729,22 @@ package fairygui {
 						continue;
 					}
 					
-					dxml = ToolSet.findChildNode(cxml, "ComboBox");
+					dxml =  PackUtils.findChildNode(cxml, "ComboBox");
 					if(dxml) {
+						dxml = new PackData(dxml);
 						value = strings[elementId];
 						if(value!=undefined)
 							dxml.setAttribute("title", value);
 						
-						items = dxml.childNodes;
-						length2 = items.length;
-						j = 0;
-						for (i2 = 0; i2 < length2; i2++) {
-							exml = items[i2];
-							if(exml.nodeName!="item")
-								continue;
-							value = strings[elementId+"-"+j];
-							if(value!=undefined)
-								exml.setAttribute("title", value);
-							j++;
+						for(cType in dxml.jsonInfo) {
+							if(cType == "item") {
+								cInfo = dxml.jsonInfo[cType];
+								if(cInfo==""||!cInfo)
+									continue;
+								value = strings[elementId+"-"+j];
+								if(value!=undefined)
+									cInfo.setAttribute("title", value);
+							}
 						}
 						continue;
 					}

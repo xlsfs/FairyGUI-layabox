@@ -1,5 +1,6 @@
-package fairygui {
-	import fairygui.utils.ToolSet;
+﻿package fairygui {
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
 	
 	import laya.display.Input;
 	import laya.events.Event;
@@ -242,7 +243,7 @@ package fairygui {
 		override protected function constructFromXML(xml: Object): void {
 			super.constructFromXML(xml);
 			
-			xml = ToolSet.findChildNode(xml, "ComboBox");
+			xml = new PackData(PackUtils.findChildNode(xml, "ComboBox"));
 			var str: String;
 			
 			this._buttonController = this.getController("button");
@@ -281,7 +282,7 @@ package fairygui {
 		override public function setup_afterAdd(xml: Object): void {
 			super.setup_afterAdd(xml);
 			
-			xml = ToolSet.findChildNode(xml, "ComboBox");
+			xml = new PackData(PackUtils.findChildNode(xml, "ComboBox"));
 			if (xml) {
 				var str: String;
 				str = xml.getAttribute("titleColor");
@@ -291,19 +292,30 @@ package fairygui {
 				if (str)
 					this._visibleItemCount = parseInt(str);
 				
-				var col: Array = xml.childNodes;
-				var length: Number = col.length;
-				for (var i: Number = 0; i < length; i++) {
-					var cxml: Object = col[i];
-					if(cxml.nodeName=="item") {
-						this._items.push(cxml.getAttribute("title"));
-						this._values.push(cxml.getAttribute("value"));
-						str = cxml.getAttribute("icon");
-						if (str)
+				var cInfo: Object;
+				var proType:String;
+				var packData:PackData;
+				var childIndex:int;
+				for(var cType:String in xml.jsonInfo)
+				{
+					if(cType == "item")
+					{
+						cInfo = xml.jsonInfo[cType];
+						proType = PackUtils.getTypeof(cInfo);
+						if(proType != "array") cInfo = [cInfo];
+						for each(var cObj:Object in cInfo)
 						{
-							if(!_icons)
-								_icons = new Array(length);
-							_icons[i] = str;
+							packData = new PackData(cObj);
+							this._items.push(packData.getAttribute("title"));
+							this._values.push(packData.getAttribute("value"));
+							str = packData.getAttribute("icon");
+							if (str)
+							{
+								if(!_icons)
+									_icons = new Array();
+								_icons[childIndex] = str;
+							}
+							childIndex++;
 						}
 					}
 				}
@@ -413,6 +425,9 @@ package fairygui {
 		}
 		
 		private function __mouseup(): void {
+			if(this.displayObject.destroyed)
+				return;
+			
 			if(this._down) {
 				this._down = false;
 				Laya.stage.off(Event.MOUSE_UP, this, this.__mouseup);

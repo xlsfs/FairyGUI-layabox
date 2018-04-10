@@ -1,4 +1,6 @@
-package fairygui {
+﻿package fairygui {
+	import fairyguiExternal.custom.utils.PackUtils;
+	import fairyguiExternal.custom.packinfo.PackData;
 	
 	public class Relations {
 		private var _owner: GObject;
@@ -187,28 +189,32 @@ package fairygui {
 		}
 		
 		public function setup(xml: Object): void {
-			var col: Array = xml.childNodes;
-			var length: Number = col.length;
 			var targetId: String;
 			var target: GObject;
-			for (var i: Number = 0; i < length; i++) {
-				var cxml: Object = col[i];
-				if(cxml.nodeName!="relation")
+			var cInfo: Object;
+			var cObj: Object;
+			var proType:String;
+			var packData:PackData;
+			for(var cType:String in xml.jsonInfo) {
+				if(cType!="relation")
 					continue;
-				
-				targetId = cxml.getAttribute("target");
-				if (this._owner.parent) {
-					if (targetId)
-						target = this._owner.parent.getChildById(targetId);
-					else
-						target = this._owner.parent;
+				cInfo = xml.jsonInfo[cType];
+				proType = PackUtils.getTypeof(cInfo);
+				if(proType != "array") {
+					packData = new PackData(cInfo);
+					targetId = packData.getAttribute("target");
+					if (this._owner.parent) {
+						if (targetId)
+							target = this._owner.parent.getChildById(targetId);
+						else
+							target = this._owner.parent;
+					}
+					else {
+						target = GComponent(this._owner).getChildById(targetId);
+					}
+					if (target)
+						this.addItems(target, packData.getAttribute("sidePair"));
 				}
-				else {
-					//call from component construction
-					target = GComponent(this._owner).getChildById(targetId);
-				}
-				if (target)
-					this.addItems(target, cxml.getAttribute("sidePair"));
 			}
 		}
 	}

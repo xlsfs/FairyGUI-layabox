@@ -1,5 +1,6 @@
-package fairygui {
-	import fairygui.utils.ToolSet;
+﻿package fairygui {
+	import fairyguiExternal.custom.packinfo.PackData;
+	import fairyguiExternal.custom.utils.PackUtils;
 	
 	import laya.utils.Ease;
 	import laya.utils.Handler;
@@ -146,7 +147,7 @@ package fairygui {
 		override protected function constructFromXML(xml: Object): void {
 			super.constructFromXML(xml);
 			
-			xml = ToolSet.findChildNode(xml, "ProgressBar");
+			xml = new PackData(PackUtils.findChildNode(xml, "ProgressBar"));
 			
 			var str: String;
 			str = xml.getAttribute("titleType");
@@ -186,7 +187,7 @@ package fairygui {
 		override public function setup_afterAdd(xml: Object): void {
 			super.setup_afterAdd(xml);
 			
-			xml = ToolSet.findChildNode(xml, "ProgressBar");
+			xml = new PackData(PackUtils.findChildNode(xml, "ProgressBar"));
 			if (xml) {
 				this._value = parseInt(xml.getAttribute("value"));
 				this._max = parseInt(xml.getAttribute("max"));

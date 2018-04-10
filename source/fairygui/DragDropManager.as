@@ -15,7 +15,7 @@ package fairygui {
 		}
 		
 		public function DragDropManager() {
-			this._agent = new GLoader();
+			this._agent = new UIObjectFactory.newObject2("loader");
 			this._agent.draggable = true;
 			this._agent.touchable = false;//important
 			this._agent.setSize(100,100);
