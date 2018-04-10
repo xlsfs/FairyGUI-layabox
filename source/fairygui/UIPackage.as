@@ -1,4 +1,4 @@
-﻿package fairygui {
+package fairygui {
 	import fairygui.AssetProxy;
 	import fairygui.DisplayListItem;
 	import fairygui.PackageItem;
@@ -170,10 +170,8 @@
 			var resources:Object = PackUtils.findChildNode(new PackData(source),"resources");
 			var packData:PackData = new PackData(resources);
 			var cInfo:Object;
-			for(var cType:String in packData.jsonInfo)
-			{
-				if(cType == "string") 
-				{
+			for(var cType:String in packData.jsonInfo) {
+				if(cType == "string") {
 					cInfo = packData.jsonInfo[cType];
 					if(cInfo==""||!cInfo)
 						continue;
@@ -265,13 +263,11 @@
 			var pi: PackageItem;
 			var cxml: Object;
 			
-			for(var cType:String in resources)
-			{
+			for(var cType:String in resources) {
 				var cInfo:Object = resources[cType];
 				var proType:String = PackUtils.getTypeof(cInfo);
 				if(proType != "array") cInfo = [cInfo];
-				for each(cxml in cInfo)
-				{
+				for each(cxml in cInfo) {
 					pi = new PackageItem();
 					pi.owner = this;
 					pi.type = PackageItemType.parse(cType);
@@ -279,23 +275,19 @@
 					pi.name = cxml.name;
 					pi.file = cxml.file;
 					str = cxml.size;
-					if(str) 
-					{
+					if(str) {
 						arr = str.split(UIPackage.sep0);
 						pi.width = parseInt(arr[0]);
 						pi.height = parseInt(arr[1]);
 					}
-					switch(pi.type)
-					{
+					switch(pi.type) {
 						case PackageItemType.Image:
-						{
 							str = cxml.scale;
-							if(str == "9grid") 
-							{
+							if(str == "9grid") {
 								pi.scale9Grid = new laya.maths.Rectangle();
 								str = cxml.scale9grid;
-								if(str)
-								{
+								if(str) {
+									pi.tileGridIndice = parseInt(str);
 									arr = str.split(UIPackage.sep0);
 									pi.scale9Grid.x = parseInt(arr[0]);
 									pi.scale9Grid.y = parseInt(arr[1]);
@@ -313,7 +305,6 @@
 							str = cxml.smoothing;
 							pi.smoothing = str != "false";
 							break;
-						}
 						case PackageItemType.Component:
 							UIObjectFactory.resolvePackageItemExtension(pi);
 							break;
@@ -518,6 +509,8 @@
 						item.decoded = true;
 						var fileName:String = (item.file != null && item.file.length > 0) ? item.file : (item.id + ".png");
 						item.texture = AssetProxy.inst.getRes(this._resKey + "@" + fileName);
+						if(!fairygui.UIConfig.textureLinearSampling)
+							item.texture.isLinearSampling = false;
 					}
 					return item.texture;
 					
@@ -585,7 +578,7 @@
 		
 		private function loadComponentChildren(item:PackageItem):void
 		{
-			var listNode:Object =item.componentData.jsonInfo.displayList;
+			var listNode:Object = item.componentData.jsonInfo.displayList;
 			if (listNode != null)
 			{
 				var cInfo:Object;

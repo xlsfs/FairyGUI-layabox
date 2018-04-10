@@ -502,7 +502,36 @@ package fairygui {
 		}
 		
 		public function set tooltips(value: String):void {
+			if(_tooltips)
+			{
+				this.off(Event.ROLL_OVER, this, this.__rollOver);
+				this.off(Event.ROLL_OUT, this, this.__rollOut);
+			}
+			
 			this._tooltips = value;
+			if(_tooltips)
+			{
+				this.on(Event.ROLL_OVER, this, this.__rollOver);
+				this.on(Event.ROLL_OUT, this, this.__rollOut);
+			}
+		}
+		
+		private function __rollOver(evt:Event):void
+		{
+			Laya.timer.once(100, this, this.__doShowTooltips);
+		}
+		
+		private function __doShowTooltips():void
+		{
+			var r:GRoot = this.root;
+			if(r)
+				this.root.showTooltips(_tooltips);
+		}
+		
+		private function __rollOut(evt:Event):void
+		{		
+			Laya.timer.clear(this, this.__doShowTooltips);
+			this.root.hideTooltips();
 		}
 		
 		public function get blendMode():String
@@ -1105,8 +1134,7 @@ package fairygui {
 			}
 			
 			str = xml.getAttribute("customData");
-			if (str)
-			{
+			if (str) {
 				this.data = str;
 				
 				{//自定义数据内放脚本,脚本用换行和等于区分
@@ -1161,8 +1189,7 @@ package fairygui {
 			var proType:String;
 			var controller: Controller;
 			var index:* ;
-			for(var cType:String in xml.jsonInfo)
-			{
+			for(var cType:String in xml.jsonInfo) {
 				cInfo = xml.jsonInfo[cType];
 				proType = PackUtils.getTypeof(cInfo);
 				if(proType != "array") cInfo = [cInfo];
