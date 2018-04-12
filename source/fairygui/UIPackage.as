@@ -12,6 +12,7 @@ package fairygui {
 	import fairyguiExternal.custom.packinfo.PackData;
 	import fairyguiExternal.custom.utils.PackUtils;
 	
+	import game.data.CompressionManager;
 	import game.utils.ByteArray;
 	
 	import laya.maths.Rectangle;
@@ -337,8 +338,8 @@ package fairygui {
 			}
 			else
 			{
-				var data: Uint8Array;
-				__JS__("var inflater = new Zlib.RawInflate(buf);data = inflater.decompress();");
+				var data: Uint8Array = CompressionManager.decodeZlib(buf);
+				
 				var info:ByteArray = new ByteArray();
 				info.writeArrayBuffer(data);
 				info.position = 0;
