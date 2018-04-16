@@ -89,7 +89,7 @@ package fairygui {
 						["closePath"]
 					];
 					
-					gr.drawPath(0, 0, path, {fillStyle: fillColor}, {strokeStyle:this._lineSize>0?lineColor:null, lineWidth:this._lineSize});
+					gr.drawPath(0, 0, path, {fillStyle: fillColor}, this._lineSize>0?{strokeStyle:lineColor, lineWidth:this._lineSize}:null);
 				} else
 					gr.drawRect(0,0,w,h,fillColor,this._lineSize>0?lineColor:null,this._lineSize);
 			} else
